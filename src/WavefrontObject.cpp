@@ -32,6 +32,17 @@ TextureCoordinate loadTextureCoordinate(std::stringstream is)
 }
 
 
+/// Loads a vertex normal from a string stream
+VertexNormal loadVertexNormal(std::stringstream is)
+{
+	std::string command{};
+	VertexNormal n{};
+	is >> command >> n.i >> n.j >> n.k;
+	if (is.fail()) { throw VertexNormalLoadingException{ "Error loading vertex normal" }; }
+	return n;
+}
+
+
 /// Loads a face from a string stream
 Face loadFace(std::stringstream is)
 {
@@ -78,8 +89,14 @@ std::ifstream &operator>>(std::ifstream &is, WavefrontObject &obj)
 					std::cout << " > Point in the parameter space of a curve or a surface\n";
 					break;
 				}
-				case 'n': {
-					std::cout << " > Normal vector\n";
+				case 'n': { // Vertex Normal command
+					try {
+						VertexNormal n{ loadVertexNormal(std::stringstream{ line }) };
+						obj.addVertexNormal(n);
+						std::cout << "n(" << n.i << ", " << n.j << ", " << n.k << ")\n";
+					} catch (VertexNormalLoadingException &e) {
+						std::cerr << "Error at line " << lineNumber << ": " << e.what() << std::endl;
+					}
 					break;
 				}
 				case 't': { // Texture Coordinate command

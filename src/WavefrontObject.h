@@ -18,6 +18,12 @@ class TextureCoordinateLoadingException : public std::runtime_error {
 };
 
 
+class VertexNormalLoadingException : public std::runtime_error {
+  public:
+	VertexNormalLoadingException(const std::string &message) : std::runtime_error(message) {}
+};
+
+
 class FaceLoadingException : public std::runtime_error {
   public:
 	FaceLoadingException(const std::string &message) : std::runtime_error(message) {};
@@ -40,6 +46,14 @@ struct TextureCoordinate {
 };
 
 
+struct VertexNormal {
+  public:
+	float i;
+	float j;
+	float k;
+};
+
+
 struct Face {
   public:
 	int indices[4];
@@ -51,6 +65,7 @@ class WavefrontObject {
 
 	inline void addVertex(const Vertex v) { vertices_.push_back(v); }
 	inline void addTextureCoordinate(const TextureCoordinate t) { textureCoordinates_.push_back(t); }
+	inline void addVertexNormal(const VertexNormal n) { normals_.push_back(n); }
 	inline void addFace(const Face f) { faces_.push_back(f); }
 
 	friend std::ifstream &operator>>(std::ifstream &in, WavefrontObject &obj);
@@ -58,6 +73,7 @@ class WavefrontObject {
   private:
 	std::vector<Vertex> vertices_;
 	std::vector<TextureCoordinate> textureCoordinates_;
+	std::vector<VertexNormal> normals_;
 	std::vector<Face> faces_;
 };
 
