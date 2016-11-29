@@ -43,15 +43,48 @@ VertexNormal loadVertexNormal(std::stringstream is)
 }
 
 
+template <char C>
+std::istream& expect(std::istream& in)
+{
+	if ((in >> std::ws).peek() == C) { in.ignore(); }
+	else { in.setstate(std::ios_base::failbit); }
+	return in;
+}
+
+
 /// Loads a face from a string stream
 Face loadFace(std::stringstream is)
 {
 	std::string command{};
 	Face f{};
-	is >> command >> f.indices[0] >> f.indices[1] >> f.indices[2];
+	is >> command >> f.indices[0];
 	if (is.fail()) { throw FaceLoadingException{ "Error loading face" }; }
-	is >> f.indices[3];
-	if (is.fail()) { f.indices[3] = -1; } // Default to invalid value
+	char next{ static_cast<char>(is.peek()) };
+	if (next == ' ') { // Only faces
+		is >> f.indices[1] >> f.indices[2];
+		if (is.fail()) { throw FaceLoadingException{ "Error loading face" }; }
+		is >> f.indices[3];
+		if (is.fail()) { f.indices[3] = -1; } // Default to invalid value
+	} else if (next == '/') {
+		is.ignore();
+		next = is.peek();
+		if (next == '/') { // Only vertices and normals
+			is.ignore();
+			is >> f.normals[0] >> f.indices[1] >> expect<'/'> >> expect<'/'> >> f.normals[1]
+				>> f.indices[2] >> expect<'/'> >> expect<'/'> >> f.normals[2];
+			if (is.fail()) { throw FaceLoadingException{ "Error loading face" }; }
+			is >> f.indices[3] >> expect<'/'> >> expect<'/'> >> f.normals[3];
+			if (is.fail()) { f.indices[3] = -1; } // Default to invalid value
+		}
+		else { // Vertices, coordinates and normals
+			is >> f.textures[0] >> expect<'/'> >> f.normals[0] >>
+				f.indices[1] >> expect<'/'> >> f.textures[1] >> expect<'/'> >> f.normals[1] >>
+				f.indices[2] >> expect<'/'> >> f.textures[2] >> expect<'/'> >> f.normals[2];
+			if (is.fail()) { throw FaceLoadingException{ "Error loading face" }; }
+			is >> f.indices[3] >> expect<'/'> >> f.textures[3] >> expect<'/'> >> f.normals[3];
+			if (is.fail()) { f.indices[3] = -1; } // Default to invalid value
+		}
+	}
 	return f;
 }
 
@@ -116,8 +149,10 @@ std::ifstream &operator>>(std::ifstream &is, WavefrontObject &obj)
 			try {
 				Face f{ loadFace(std::stringstream{ line }) };
 				obj.addFace(f);
-				std::cout << "f(" << f.indices[0] << ", " << f.indices[1] << ", "
-					<< f.indices[2] << ", " << f.indices[3] << ")\n";
+				std::cout << "f(" << f.indices[0] << "/" << f.textures[0] << "/" << f.normals[0] <<
+						", " << f.indices[1] << "/" << f.textures[1] << "/" << f.normals[1] <<
+						", " << f.indices[2] << "/" << f.textures[2] << "/" << f.normals[2] <<
+						", " << f.indices[3] << "/" << f.textures[3] << "/" << f.normals[3] << ")\n";
 				break;
 			}
 			catch (FaceLoadingException &e) { // Invalid face command

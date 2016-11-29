@@ -57,6 +57,8 @@ struct VertexNormal {
 struct Face {
   public:
 	int indices[4];
+	int textures[4];
+	int normals[4];
 };
 
 
