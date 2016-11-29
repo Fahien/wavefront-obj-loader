@@ -19,6 +19,19 @@ Vertex loadVertex(std::stringstream is)
 }
 
 
+/// Loads a texture coordinate from a string stream
+TextureCoordinate loadTextureCoordinate(std::stringstream is)
+{
+	std::string command{};
+	TextureCoordinate t{};
+	is >> command >> t.u;
+	if (is.fail()) { throw TextureCoordinateLoadingException{ "Error loading texture coordinate" }; }
+	is >> t.v;
+	if (is.fail()) { t.v = 0.0f; } // Default to 0
+	return t;
+}
+
+
 /// Loads a face from a string stream
 Face loadFace(std::stringstream is)
 {
@@ -54,13 +67,12 @@ std::ifstream &operator>>(std::ifstream &is, WavefrontObject &obj)
 					try {
 						Vertex v{ loadVertex(std::stringstream{ line }) };
 						obj.addVertex(v);
-						std::cout << v.x << " " << v.y << " " << v.z << " " << v.w << std::endl;
-						break;
+						std::cout << "v(" << v.x << ", " << v.y << ", " << v.z << ", " << v.w << ")\n";
 					}
 					catch (VertexLoadingException &e) { // Invalid vertex command
 						std::cerr << "Error at line " << lineNumber << ": " << e.what() <<  std::endl;
-						break;
 					}
+					break;
 				}
 				case 'p': {
 					std::cout << " > Point in the parameter space of a curve or a surface\n";
@@ -70,8 +82,14 @@ std::ifstream &operator>>(std::ifstream &is, WavefrontObject &obj)
 					std::cout << " > Normal vector\n";
 					break;
 				}
-				case 't': {
-					std::cout << " > Texture coordinates\n";
+				case 't': { // Texture Coordinate command
+					try {
+						TextureCoordinate t{ loadTextureCoordinate(std::stringstream{ line }) };
+						obj.addTextureCoordinate(t);
+						std::cout << "vt(" << t.u << ", " << t.v << ")\n";
+					} catch (TextureCoordinateLoadingException &e) { // Invalid texture coordinate command
+						std::cerr << "Error at line " << lineNumber << ": " << e.what() << std::endl;
+					}
 					break;
 				}
 			}
@@ -81,8 +99,8 @@ std::ifstream &operator>>(std::ifstream &is, WavefrontObject &obj)
 			try {
 				Face f{ loadFace(std::stringstream{ line }) };
 				obj.addFace(f);
-				std::cout << f.indices[0] << " " << f.indices[1] << " "
-					<< f.indices[2] << " " << f.indices[3] << std::endl;
+				std::cout << "f(" << f.indices[0] << ", " << f.indices[1] << ", "
+					<< f.indices[2] << ", " << f.indices[3] << ")\n";
 				break;
 			}
 			catch (FaceLoadingException &e) { // Invalid face command
@@ -91,7 +109,7 @@ std::ifstream &operator>>(std::ifstream &is, WavefrontObject &obj)
 			}
 		}
 		default: {
-			std::cerr << "Error at line " << lineNumber << ": " << line <<  std::endl;
+			std::cerr << "Line " << lineNumber << " ignored: " << line <<  std::endl;
 			break;
 		}}
 		++lineNumber;
