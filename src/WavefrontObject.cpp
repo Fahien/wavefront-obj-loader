@@ -96,6 +96,7 @@ std::ifstream &operator>>(std::ifstream &is, WavefrontObject &obj)
 	unsigned lineNumber{ 1 };
 
 	while (std::getline(is, line)) {
+		if (line.length() == 0) { continue; } // Ignore empty line
 		switch (line[0]) {
 		case '#': {
 			std::cout << "## Comment\n";
@@ -165,7 +166,6 @@ std::ifstream &operator>>(std::ifstream &is, WavefrontObject &obj)
 			break;
 		}}
 		++lineNumber;
-		std::cout << "\n";
 	}
 	return is;
 }
